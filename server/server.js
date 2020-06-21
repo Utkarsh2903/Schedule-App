@@ -5,11 +5,11 @@ const bcrypt = require('bcrypt');
 const saltRounds = 10;
 const nodemailer = require('nodemailer');
 const cron = require('node-cron');
-//imap
 var Imap = require("imap");
 var MailParser = require("mailparser").MailParser;
 var Promise = require("bluebird");
-//Promise.longStackTraces();
+
+
 const db = require('knex')({
   client: 'pg',
   version: '7.2',
@@ -110,11 +110,11 @@ function update_from_replies() {
 	            var message,email;
 	            message=str.substring(0,str.indexOf('\n'));
 	            email=str.substring(str.lastIndexOf('<') + 1,str.lastIndexOf('>'));
-	            console.log('email and msg', email,message);
+	    
 	            let date = new Date();
 	            let dayOfWeek = date.getDay();
 	            var day = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday']
-	            var Day = day[dayOfWeek];
+	            var Day = day[(dayOfWeek-1+7)%7];
 
 	            db.select('*').from(Day).where('email','=',email)
 	            .then(subjects =>{
@@ -138,16 +138,14 @@ function update_from_replies() {
 	                    arr.push(subjects[0].from4to5.toLowerCase());
 	                if(subjects[0].from5to6 !== 'Free!')
 	                    arr.push(subjects[0].from5to6.toLowerCase());
-	                
-	                console.log(`Attendance Updation Summary: \nemail=${email2}, \narr=${arr}, \nmsg=${msg}`);
-	                
+	                	                
 	                for(let i=0;i<arr.length;i++)
 	                {
 	                    if(msg.charAt(i)=='Y' || msg.charAt(i)=='y')
 	                    {
 	                          // db('subject')
 	                          // .returning('*')
-	                          // .where({ email:email,name:arr[i] })
+	                          // .where({ email:email2,name:arr[i] })
 	                          // .increment({ attended: 1,total: 1})
 	                          // .then(data => console.log('Done 1', data))
 	                          // .catch(()=>console.log('Not Done 1'))
@@ -176,7 +174,7 @@ function update_from_replies() {
 	                    {
 	                          // db('subject')
 	                          // .returning('*')
-	                          // .where({ email:email,name:arr[i] })
+	                          // .where({ email:email2,name:arr[i] })
 	                          // .increment({ total: 1})
 	                          // .then(data => console.log('Done 2', data))
 	                          // .catch(()=>console.log('Not Done 2'))
@@ -204,69 +202,6 @@ function update_from_replies() {
 	                }
 	                
 	             })
-	            // .then(()=>{
-	            //     for(let i=0;i<arr.length;i++)
-	            //     {
-	            //         if(message.charAt(i)=='Y' || message.charAt(i)=='y')
-	            //         {
-	            //               // db('subject')
-	            //               // .returning('*')
-	            //               // .where({ email:email,name:arr[i] })
-	            //               // .increment({ attended: 1,total: 1})
-	            //               // .then(data => console.log('Done 1', data))
-	            //               // .catch(()=>console.log('Not Done 1'))
-	                          
-	            //               db('subject')
-	            //               .where({ email:email3, name:arr[i] })
-	            //               .select('*')
-	            //               .then(data2 => {
-	            //               	let e = data2[0].email,
-	            //               		n = data2[0].name,
-	            //               		a = data2[0].attended, 
-	            //               		t = data2[0].total;
-	                          		
-	            //               		console.log('enat', e, n, a, t);
-	                          		
-	            //               		db('subject')
-	            //               		.returning('*')
-	            //               		.where({ email:e, name:n })
-	            //               		.update({attended: a+1, total: t+1})
-	            //               		.then(result => console.log(`updation of ${result}`))
-	            //               		.catch(() => console.log(`updation of ${n} failed`))
-	            //               })
-	            //               .catch(() => console.log('Not Done'))
-	            //         }
-	            //        else if(message.charAt(i)=='N' || message.charAt(i)=='n')
-	            //         {
-	            //               // db('subject')
-	            //               // .returning('*')
-	            //               // .where({ email:email,name:arr[i] })
-	            //               // .increment({ total: 1})
-	            //               // .then(data => console.log('Done 2', data))
-	            //               // .catch(()=>console.log('Not Done 2'))
-	                          
-	            //               db('subject')
-	            //               .where({ email:email3, name:arr[i] })
-	            //               .select('*')
-	            //               .then(data2 => {
-	            //               	let e = data2[0].email,
-	            //               		n = data2[0].name,
-	            //               		a = data2[0].attended, 
-	            //               		t = data2[0].total;
-	                          		
-	            //               		console.log('enat', e, n, a, t);
-	                          		
-	            //               		db('subject')
-	            //               		.returning('*')
-	            //               		.where({ email:e, name:n })
-	            //               		.update({total: t+1})
-	            //               		.then(result => console.log(`updation of ${result}`))
-	            //               		.catch(() => console.log(`updation of ${n} failed`))
-	            //               })
-	            //               .catch(() => console.log('Not Done'))
-	            //         }
-	            //     }
-	            // })
 	        }
 	     });
 
@@ -283,12 +218,11 @@ function update_from_replies() {
 }
 
 //input alert_email_phone values
+
 db
 .select('*')
 .from('users')
 .then(data => {
-	//console.log('loop');
-	
 	for(let i=0;i<data.length;i++)
 	{
 		alert_email_phone.push({email: data[i].email, 
@@ -297,12 +231,13 @@ db
 								phone_alert: data[i].phone_alert
 							});
 	}
-	
-	console.log(alert_email_phone);
 })
 
+
 // for emailing time table
-cron.schedule('30 * * * * *' ,() =>{
+
+
+cron.schedule('50 8-16 * * *' ,() =>{
 	let date = new Date();
 	let dayOfWeek = date.getDay();
 	let hourOfDay = date.getHours();
@@ -332,10 +267,6 @@ cron.schedule('30 * * * * *' ,() =>{
 				data=user[i].from4to5;
 			else if(hourOfDay == 8)
 				data=user[i].from5to6;
-			else
-				data = 'maths';
-			
-			//console.log('data', data);
 			
 			let email_alert=0, phone_alert=0, phone='';
 			
@@ -348,10 +279,6 @@ cron.schedule('30 * * * * *' ,() =>{
 					phone = alert_email_phone[x].phone;
 				}
 			}
-			
-			
-			
-			//console.log(`${data} \n  you have an attendance of: ${att}/${tot} \n i.e. ${per}%`);
 			
 			db('subject')
 			.where({email: user[i].email, name: data.toLowerCase()})
@@ -375,9 +302,7 @@ cron.schedule('30 * * * * *' ,() =>{
 					per = 0;
 				else
 					per = Math.floor((att*100)/tot);
-				
-				//console.log(`Time-Table msg summary: \nemail:${user[i].email} \nphone:${phone} \nemail_alert:${email_alert} \nphone_alert:${phone_alert} \nmsg: \n Your next class is ${data} \n you have an attendance of: ${att}/${tot} \n i.e. ${per}%`);
-				
+								
 				if(email_alert)
 				{
 					transport.sendMail(
@@ -415,8 +340,11 @@ cron.schedule('30 * * * * *' ,() =>{
 	.then(()=>console.log('Sent'))
 });
 
+
 // for emailing todo list
-cron.schedule('10 * * * * *' ,() =>{
+
+
+cron.schedule('* 8 * * *' ,() =>{
 	
 	console.log(update_from_replies());
 	
@@ -424,7 +352,7 @@ cron.schedule('10 * * * * *' ,() =>{
 	.select('*')
 	.from('users')
 	.then(user =>{
-		//console.log('todo user',user);
+
 		for(let i=0;i<user.length;i++)
 		{
 			db
@@ -432,7 +360,6 @@ cron.schedule('10 * * * * *' ,() =>{
 			.from('todo')
 			.where('email','=',user[i].email)
 			.then(users =>{
-				//console.log('todo users',users);
 				if(users.length>0)
 				{
 					let task='' ,temp = users[0].email;
@@ -443,8 +370,6 @@ cron.schedule('10 * * * * *' ,() =>{
 						if(j!=users.length-1)
 							task=task+', '+'\n';
 					}
-					//task.toString();
-					//console.log('is it with enter?',task);
 					
 					let email_alert=0, phone_alert=0, phone='';
 					
@@ -457,9 +382,7 @@ cron.schedule('10 * * * * *' ,() =>{
 							phone = alert_email_phone[x].phone;
 						}
 					}
-					
-					//console.log(`Todo msg summary: \nemail:${user[i].email} \nphone:${phone} \nemail_alert:${email_alert} \nphone_alert:${phone_alert} \nmsg: \n Your tasks for today are:\n ${task}`);
-					
+										
 					if(email_alert)
 					{
 						transport.sendMail(
@@ -498,8 +421,11 @@ cron.schedule('10 * * * * *' ,() =>{
 	})
 });
 
+
 //for attendance updation
-cron.schedule('10 * * * * *', () => {
+
+
+cron.schedule('* 19 * * *', () => {
 	let date = new Date();
 	let dayOfWeek = date.getDay();
 	var day = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday']
@@ -542,20 +468,6 @@ cron.schedule('10 * * * * *', () => {
 			
 			data = data + '(Reply with the following scheme without spaces Y=yes:N=no:C=cancelled)';
 			
-			let email_alert=0, phone_alert=0, phone='';
-			
-			for(let x=0;x<alert_email_phone.length;x++)
-			{
-				if(user[i].email===alert_email_phone[x].email)
-				{
-					email_alert = alert_email_phone[x].email_alert;
-					phone_alert = alert_email_phone[x].phone_alert;
-					phone = alert_email_phone[x].phone;
-				}
-			}
-			
-			//console.log(`Attendance update msg summary: \nemail:${user[i].email} \nemail_alert:${email_alert} \nphone_alert:${phone_alert} \nmsg: \n Your classes for today were:\n ${data}`);
-			
 			transport.sendMail(
 		    {
 	            from: 'scheduletest9@gmail.com',
@@ -583,10 +495,11 @@ const app = express();
 app.use(bodyParser.json());
 app.use(cors());
 
+
 //signin
+
+
 app.post('/signin', (req, res) =>{
-	
-	//console.log('server-side', req.body);
 	
 	const {email, password} = req.body;
 	
@@ -620,19 +533,16 @@ app.post('/signin', (req, res) =>{
 			db.select('*').from('users')
 			.where('email', '=', req.body.email)
 			.then(user => {
-				//console.log(user[0]);
 				realUser.name = user[0].name;
 				realUser.email = user[0].email;
 				realUser.phone = user[0].phone;
 				realUser.email_alert = user[0].email_alert;
 				realUser.phone_alert = user[0].phone_alert;
-				//res.json(user[0])
 			})
 			.then(() => {
 				db.select('*').from('monday')
 				.where('email', '=', req.body.email)
 				.then(user => {
-					//console.log(user[0]);
 					realUser.timeTable[0][0] = user[0].from9to10;
 					realUser.timeTable[0][1] = user[0].from10to11;
 					realUser.timeTable[0][2] = user[0].from11to12;
@@ -647,7 +557,6 @@ app.post('/signin', (req, res) =>{
 					db.select('*').from('tuesday')
 					.where('email', '=', req.body.email)
 					.then(user => {
-						//console.log(user[0]);
 						realUser.timeTable[1][0] = user[0].from9to10;
 						realUser.timeTable[1][1] = user[0].from10to11;
 						realUser.timeTable[1][2] = user[0].from11to12;
@@ -662,7 +571,6 @@ app.post('/signin', (req, res) =>{
 						db.select('*').from('wednesday')
 						.where('email', '=', req.body.email)
 						.then(user => {
-							//console.log(user[0]);
 							realUser.timeTable[2][0] = user[0].from9to10;
 							realUser.timeTable[2][1] = user[0].from10to11;
 							realUser.timeTable[2][2] = user[0].from11to12;
@@ -672,13 +580,11 @@ app.post('/signin', (req, res) =>{
 							realUser.timeTable[2][6] = user[0].from3to4;
 							realUser.timeTable[2][7] = user[0].from4to5;
 							realUser.timeTable[2][8] = user[0].from5to6;
-							//res.json(user[0])
 						})
 						.then(() => {
 							db.select('*').from('thursday')
 							.where('email', '=', req.body.email)
 							.then(user => {
-								//console.log(user[0]);
 								realUser.timeTable[3][0] = user[0].from9to10;
 								realUser.timeTable[3][1] = user[0].from10to11;
 								realUser.timeTable[3][2] = user[0].from11to12;
@@ -688,13 +594,11 @@ app.post('/signin', (req, res) =>{
 								realUser.timeTable[3][6] = user[0].from3to4;
 								realUser.timeTable[3][7] = user[0].from4to5;
 								realUser.timeTable[3][8] = user[0].from5to6;
-								//res.json(user[0])
 							})
 							.then(() => {
 								db.select('*').from('friday')
 								.where('email', '=', req.body.email)
 								.then(user => {
-									//console.log(user[0]);
 									realUser.timeTable[4][0] = user[0].from9to10;
 									realUser.timeTable[4][1] = user[0].from10to11;
 									realUser.timeTable[4][2] = user[0].from11to12;
@@ -704,13 +608,11 @@ app.post('/signin', (req, res) =>{
 									realUser.timeTable[4][6] = user[0].from3to4;
 									realUser.timeTable[4][7] = user[0].from4to5;
 									realUser.timeTable[4][8] = user[0].from5to6;
-									//res.json(user[0])
 								})
 								.then(() => {
 									db.select('*').from('saturday')
 									.where('email', '=', req.body.email)
 									.then(user => {
-										//console.log(user[0]);
 										realUser.timeTable[5][0] = user[0].from9to10;
 										realUser.timeTable[5][1] = user[0].from10to11;
 										realUser.timeTable[5][2] = user[0].from11to12;
@@ -720,13 +622,11 @@ app.post('/signin', (req, res) =>{
 										realUser.timeTable[5][6] = user[0].from3to4;
 										realUser.timeTable[5][7] = user[0].from4to5;
 										realUser.timeTable[5][8] = user[0].from5to6;
-										//res.json(user[0])
 									})
 									.then(() => {
 										db.select('*').from('sunday')
 										.where('email', '=', req.body.email)
 										.then(user => {
-											//console.log(user[0]);
 											realUser.timeTable[6][0] = user[0].from9to10;
 											realUser.timeTable[6][1] = user[0].from10to11;
 											realUser.timeTable[6][2] = user[0].from11to12;
@@ -799,12 +699,14 @@ app.post('/signin', (req, res) =>{
 	.catch(err => res.status(400).json('invalid credentials'))
 });
 
+
 //register
+
+
 app.post('/register', (req, res) => {
+
 	const { email, name, password } = req.body;
-	
 	alert_email_phone.push({email: email, phone: '', email_alert: 0, phone_alert: 0});
-	console.log(alert_email_phone);
 	
 	var salt = bcrypt.genSaltSync(saltRounds);
 	var hash = bcrypt.hashSync(password, salt);
@@ -828,9 +730,7 @@ app.post('/register', (req, res) => {
         subject: [],
         project: []
       }
-	
-	//console.log(email, name, password);
-	
+
 	db.transaction(trx => {
 		trx.insert({ hash: hash, email: email}).into('login')
 		  .returning('email')
@@ -862,126 +762,14 @@ app.post('/register', (req, res) => {
 		.catch(trx.rollback)
 	})
 	.catch((err) => res.status(400).json('user-email already exists'));
-	
-	// db.transaction(trx => {
-	// 	db
-	// 	.insert({
-	// 		hash: hash,
-	// 		email: email
-	// 	})
-	// 	.returning('*')
-	// 	.into('login')
-	// 	.transacting(trx)
-	// 	.then(data => {
-	// 		console.log('after login', data);
-	// 		return(
-	// 			db
-	// 			.insert({
-	// 				email: email,
-	// 				name: name
-	// 			})
-	// 			.returning('*')
-	// 			.into('users')
-	// 			.transacting(trx)
-	// 		)
-	// 	})
-	// 	.then(data => {
-	// 		console.log('after users', data);
-	// 		return(
-	// 			db
-	// 			.insert({
-	// 				email: email
-	// 			})
-	// 			.returning('*')
-	// 			.into('monday')
-	// 			.transacting(trx)
-	// 		)
-	// 	})
-	// 	.then(data => {
-	// 		console.log('after monday', data);
-	// 		return(
-	// 			db
-	// 			.insert({
-	// 				email: email
-	// 			})
-	// 			.returning('*')
-	// 			.into('tuesday')
-	// 			.transacting(trx)
-	// 		)
-	// 	})
-	// 	.then(data => {
-	// 		console.log('after tuesday', data);
-	// 		return(
-	// 			db
-	// 			.insert({
-	// 				email: email
-	// 			})
-	// 			.returning('*')
-	// 			.into('wednesday')
-	// 			.transacting(trx)
-	// 		)
-	// 	})
-	// 	.then(data => {
-	// 		console.log('after wednesday', data);
-	// 		return(
-	// 			db
-	// 			.insert({
-	// 				email: email
-	// 			})
-	// 			.returning('*')
-	// 			.into('thursday')
-	// 			.transacting(trx)
-	// 		)
-	// 	})
-	// 	.then(data => {
-	// 		console.log('after thursday', data);
-	// 		return(
-	// 			db
-	// 			.insert({
-	// 				email: email
-	// 			})
-	// 			.returning('*')
-	// 			.into('friday')
-	// 			.transacting(trx)
-	// 		)
-	// 	})
-	// 	.then(data => {
-	// 		console.log('after friday', data);
-	// 		return(
-	// 			db
-	// 			.insert({
-	// 				email: email
-	// 			})
-	// 			.returning('*')
-	// 			.into('saturday')
-	// 			.transacting(trx)
-	// 		)
-	// 	})
-	// 	.then(data => {
-	// 		console.log('after saturday', data);
-	// 		return(
-	// 			db
-	// 			.insert({
-	// 				email: email
-	// 			})
-	// 			.returning('*')
-	// 			.into('sunday')
-	// 			.transacting(trx)
-	// 		)
-	// 	})
-	// 	.then(trx.commit)
-	// 	.catch(trx.rollback)
-	// })
-	// .then(data => {
-	// 	console.log('outside trx func', data);
-	// 	res.send(realUser);
-	// })
-	// .catch((err) => res.status(400).json('user-email already exists'));
 });
 
 
 //signout....data saving
+
+
 app.post('/signout', (req, res) => {
+
 	const {email, phone, email_alert, phone_alert, name, timeTable, todo, project, subject} = req.body;
 	
 	let flag1 = 0;
@@ -1003,8 +791,6 @@ app.post('/signout', (req, res) => {
 		alert_email_phone.push({email: email, phone: phone, email_alert: email_alert, phone_alert: phone_alert});
 	}
 	
-	//console.log(req.body);
-	
 	db.transaction(trx => {
 		db('monday')
 		.where('email', '=', email)
@@ -1022,7 +808,6 @@ app.post('/signout', (req, res) => {
 		.returning('*')
 		.transacting(trx)
 		.then(data => {
-			console.log('after monday', data);
 			return(
 				db('tuesday')
 				.where('email', '=', email)
@@ -1042,7 +827,6 @@ app.post('/signout', (req, res) => {
 			)
 		})
 		.then(data => {
-			console.log('after tuesday', data);
 			return(
 				db('wednesday')
 				.where('email', '=', email)
@@ -1062,7 +846,6 @@ app.post('/signout', (req, res) => {
 			)
 		})
 		.then(data => {
-			console.log('after wednesday', data);
 			return(
 				db('thursday')
 				.where('email', '=', email)
@@ -1082,7 +865,6 @@ app.post('/signout', (req, res) => {
 			)
 		})
 		.then(data => {
-			console.log('after thursday', data);
 			return(
 				db('friday')
 				.where('email', '=', email)
@@ -1102,7 +884,6 @@ app.post('/signout', (req, res) => {
 			)
 		})
 		.then(data => {
-			console.log('after friday', data);
 			return(
 				db('saturday')
 				.where('email', '=', email)
@@ -1122,7 +903,6 @@ app.post('/signout', (req, res) => {
 			)
 		})
 		.then(data => {
-			console.log('after saturday', data);
 			return(
 				db('sunday')
 				.where('email', '=', email)
@@ -1142,7 +922,6 @@ app.post('/signout', (req, res) => {
 			)
 		})
 		.then(data => {
-			console.log('after sunday', data);
 			return(
 				db('todo')
 				.where('email','=', email)
@@ -1152,7 +931,6 @@ app.post('/signout', (req, res) => {
 			)
 		})
 		.then(data => {
-			console.log('after del todo', data);
 			return(
 				db
 				.insert(todo)
@@ -1162,7 +940,6 @@ app.post('/signout', (req, res) => {
 			)
 		})
 		.then(data => {
-			console.log('after inserting todo', data);
 			return(
 				db('project')
 				.where('email','=', email)
@@ -1172,7 +949,6 @@ app.post('/signout', (req, res) => {
 			)
 		})
 		.then(data => {
-			console.log('after del project', data);
 			return(
 				db
 				.insert(project)
@@ -1182,7 +958,6 @@ app.post('/signout', (req, res) => {
 			)
 		})
 		.then(data => {
-			console.log('after inserting project', data);
 			return(
 				db('users')
 				.where('email','=', email)
@@ -1192,7 +967,6 @@ app.post('/signout', (req, res) => {
 			)
 		})
 		.then(data => {
-			console.log('after updating users', data);
 			return(
 				db('subject')
 				.where('email','=',email)
@@ -1202,7 +976,6 @@ app.post('/signout', (req, res) => {
 			)
 		})
 		.then(data => {
-			console.log('after del subjects', data);
 			return(
 				db
 				.insert(subject)
@@ -1216,8 +989,6 @@ app.post('/signout', (req, res) => {
 	})
 	.then(data => {
 		res.send("success");
-		console.log('outside trx func ',data);
-		console.log('alert array', alert_email_phone);
 	})
 	.catch((err) => res.status(400).json('error in updating'));
 })
